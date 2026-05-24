@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aetheria | Intelligent Hotel Reservation & Recommendation System</title>
+    <meta name="description" content="A state-of-the-art intelligent hotel booking and recommendation platform.">
+    <!-- Google Fonts: Outfit & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Admin Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF for Client-side PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Background Glow Elements -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <!-- Navigation Header -->
+    <header class="main-header">
+        <div class="logo">
+            <i class="fa-solid fa-hotel logo-icon"></i>
+            <span class="logo-text">AETHERIA</span>
+        </div>
+        <nav class="nav-links">
+            <span id="welcome-message" class="welcome-user"></span>
+            <button id="nav-btn-dashboard" class="nav-link-btn active hidden" onclick="switchView('user-dashboard')">
+                <i class="fa-solid fa-compass"></i> Discover
+            </button>
+            <button id="nav-btn-history" class="nav-link-btn hidden" onclick="switchView('booking-history')">
+                <i class="fa-solid fa-receipt"></i> Bookings
+            </button>
+            <button id="nav-btn-admin" class="nav-link-btn hidden" onclick="switchView('admin-dashboard')">
+                <i class="fa-solid fa-circle-nodes"></i> Admin Portal
+            </button>
+            <button id="nav-btn-logout" class="btn-logout hidden" onclick="handleLogout()">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+        </nav>
+    </header>
+
+    <main class="content-wrapper">
+        <!-- ================= AUTHENTICATION VIEW ================= -->
+        <section id="view-auth" class="view-section active">
+            <div class="auth-container">
+                <div class="auth-card" id="auth-card">
+                    <!-- Front: Login -->
+                    <div class="auth-front">
+                        <h2 class="auth-title">Welcome Back</h2>
+                        <p class="auth-subtitle">Discover premium stays curated by advanced AI.</p>
+                        
+                        <div class="role-selector">
+                            <button class="role-btn active" id="role-user-login" onclick="setLoginRole('user')">User</button>
+                            <button class="role-btn" id="role-admin-login" onclick="setLoginRole('admin')">Admin</button>
+                        </div>
+
+                        <form id="login-form" onsubmit="handleLogin(event)">
+                            <div class="input-group">
+                                <label for="login-username"><i class="fa-solid fa-user"></i> Username</label>
+                                <input type="text" id="login-username" placeholder="Enter username" required autocomplete="username">
+                            </div>
+                            <div class="input-group">
+                                <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
+                                <input type="password" id="login-password" placeholder="Enter password" required autocomplete="current-password">
+                            </div>
+                            <button type="submit" class="btn-primary auth-submit">
+                                Sign In <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                            </button>
+                        </form>
+
+                        <div class="auth-switch">
+                            Don't have an account? <a href="#" onclick="toggleAuthCard(true)">Register here</a>
+                        </div>
+                    </div>
+
+                    <!-- Back: Register -->
+                    <div class="auth-back">
+                        <h2 class="auth-title">Create Account</h2>
+                        <p class="auth-subtitle">Join us to unlock personalized hotel recommendations.</p>
+
+                        <form id="register-form" onsubmit="handleRegister(event)">
+                            <div class="input-group">
+                                <label for="reg-username"><i class="fa-solid fa-user"></i> Username</label>
+                                <input type="text" id="reg-username" placeholder="Choose username" required autocomplete="username">
+                            </div>
+                            <div class="input-group">
+                                <label for="reg-email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                                <input type="email" id="reg-email" placeholder="you@domain.com" required autocomplete="email">
+                            </div>
+                            <div class="input-group">
+                                <label for="reg-password"><i class="fa-solid fa-lock"></i> Password</label>
+                                <input type="password" id="reg-password" placeholder="Create password" required autocomplete="new-password">
+                            </div>
+                            <button type="submit" class="btn-primary auth-submit">
+                                Create Account <i class="fa-solid fa-user-plus"></i>
+                            </button>
+                        </form>
+
+                        <div class="auth-switch">
+                            Already have an account? <a href="#" onclick="toggleAuthCard(false)">Login here</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= USER DASHBOARD VIEW ================= -->
+        <section id="view-user-dashboard" class="view-section hidden">
+            <!-- Intelligent Recommendations Carousel -->
+            <div id="personalized-recommendations-section" class="rec-section hidden">
+                <h3 class="section-title"><i class="fa-solid fa-wand-magic-sparkles text-glow"></i> Recommended For You</h3>
+                <p class="section-subtitle" id="rec-section-subtitle">Based on your preferences and booking history</p>
+                <div class="hotel-grid grid-compact" id="recommendations-grid">
+                    <!-- Recommended hotels loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Search, Filter and Sort Section -->
+            <div class="controls-panel">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="filter-search" placeholder="Search by hotel name or cuisine/amenity..." oninput="triggerFilterSearch()">
+                </div>
+                <div class="filter-options">
+                    <div class="select-wrapper">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <select id="filter-city" onchange="applyFilters()">
+                            <option value="">All Locations</option>
+                            <!-- Loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="select-wrapper">
+                        <i class="fa-solid fa-arrow-down-9-1"></i>
+                        <select id="sort-by" onchange="applyFilters()">
+                            <option value="rating">Top Rated</option>
+                            <option value="votes">Most Popular</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hotels Listings Grid -->
+            <div class="grid-header">
+                <h3 class="section-title"><i class="fa-solid fa-hotel"></i> Available Stays</h3>
+                <span id="results-count" class="count-tag">Loading stays...</span>
+            </div>
+
+            <div class="hotel-grid" id="hotels-list-grid">
+                <!-- Hotel cards loaded dynamically -->
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-container" id="pagination-controls">
+                <!-- Dynamic buttons -->
+            </div>
+        </section>
+
+        <!-- ================= BOOKING HISTORY VIEW ================= -->
+        <section id="view-booking-history" class="view-section hidden">
+            <h2 class="view-title"><i class="fa-solid fa-clock-rotate-left"></i> Your Booking History</h2>
+            <div class="booking-history-container" id="booking-history-list">
+                <!-- Bookings loaded dynamically -->
+            </div>
+        </section>
+
+        <!-- ================= ADMIN DASHBOARD VIEW ================= -->
+        <section id="view-admin-dashboard" class="view-section hidden">
+            <div class="admin-layout">
+                <!-- Admin Sidebar Navigation -->
+                <aside class="admin-sidebar">
+                    <button class="admin-tab-btn active" id="admin-tab-analytics" onclick="switchAdminTab('analytics')">
+                        <i class="fa-solid fa-chart-line"></i> Analytics Overview
+                    </button>
+                    <button class="admin-tab-btn" id="admin-tab-reservations" onclick="switchAdminTab('reservations')">
+                        <i class="fa-solid fa-bell"></i> Reservations requests
+                    </button>
+                    <button class="admin-tab-btn" id="admin-tab-listings" onclick="switchAdminTab('listings')">
+                        <i class="fa-solid fa-list-check"></i> Manage Listings
+                    </button>
+                </aside>
+
+                <!-- Admin Tab Contents -->
+                <div class="admin-content">
+                    <!-- A. Analytics Tab -->
+                    <div id="admin-content-analytics" class="admin-tab-content">
+                        <h2 class="view-title"><i class="fa-solid fa-chart-pie"></i> Performance Analytics</h2>
+                        <!-- Summary Cards -->
+                        <div class="analytics-cards">
+                            <div class="stat-card">
+                                <i class="fa-solid fa-users stat-icon icon-purple"></i>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="stat-users">0</span>
+                                    <span class="stat-label">Total Users</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fa-solid fa-bed stat-icon icon-blue"></i>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="stat-bookings">0</span>
+                                    <span class="stat-label">Total Reservations</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fa-solid fa-city stat-icon icon-pink"></i>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="stat-hotels">0</span>
+                                    <span class="stat-label">Active Hotels</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fa-solid fa-chart-line stat-icon icon-green"></i>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="stat-recommendations">0%</span>
+                                    <span class="stat-label">Rec Coverage Rate</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Graphical Charts Grid -->
+                        <div class="charts-grid">
+                            <div class="chart-container">
+                                <h3>Most Booked Hotels</h3>
+                                <canvas id="chart-most-booked"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h3>Top-Rated Hotel Performance</h3>
+                                <canvas id="chart-top-rated"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h3>Hotel Rating Distributions</h3>
+                                <canvas id="chart-ratings-dist"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h3>Booking Request Statuses</h3>
+                                <canvas id="chart-booking-status"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B. Reservations Tab -->
+                    <div id="admin-content-reservations" class="admin-tab-content hidden">
+                        <h2 class="view-title"><i class="fa-solid fa-receipt"></i> Active Booking Requests</h2>
+                        <div class="table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Hotel</th>
+                                        <th>Room</th>
+                                        <th>Dates</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-bookings-table-body">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- C. Listings Tab -->
+                    <div id="admin-content-listings" class="admin-tab-content hidden">
+                        <div class="listings-header">
+                            <h2 class="view-title"><i class="fa-solid fa-sliders"></i> Manage Hotels</h2>
+                            <button class="btn-primary" onclick="openAddHotelModal()"><i class="fa-solid fa-plus"></i> Add New Hotel</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>City</th>
+                                        <th>Cuisines/Amenities</th>
+                                        <th>Cost for Two</th>
+                                        <th>Rating</th>
+                                        <th>Rooms</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-hotels-table-body">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Listing Pagination -->
+                        <div class="pagination-container" id="admin-hotels-pagination">
+                            <!-- Dynamic controls -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ================= DETAIL / BOOKING MODAL ================= -->
+    <div id="modal-detail" class="modal-overlay hidden" onclick="closeModalOnOverlay(event, 'modal-detail')">
+        <div class="modal-card">
+            <button class="modal-close" onclick="closeModal('modal-detail')"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-hero">
+                <img id="modal-hotel-img" src="" alt="Hotel image">
+                <div class="modal-hero-content">
+                    <span id="modal-hotel-city" class="modal-city-tag"></span>
+                    <h2 id="modal-hotel-name"></h2>
+                    <div class="modal-rating-row">
+                        <span id="modal-hotel-rating" class="rating-badge"></span>
+                        <span id="modal-hotel-votes" class="votes-count"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-body-layout">
+                <!-- Left: Info, Amenities, Reviews -->
+                <div class="modal-body-left">
+                    <div class="info-section">
+                        <h4><i class="fa-solid fa-map-location-dot"></i> Address</h4>
+                        <p id="modal-hotel-address"></p>
+                    </div>
+                    <div class="info-section">
+                        <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Amenities & Cuisines</h4>
+                        <p id="modal-hotel-cuisines"></p>
+                    </div>
+                    <div class="info-section">
+                        <h4><i class="fa-solid fa-dollar-sign"></i> Rates per Night</h4>
+                        <p>Average cost per night is dynamically scaled from <strong id="modal-hotel-cost"></strong>. Slots are limited.</p>
+                    </div>
+
+                    <!-- ML Recommendations below details -->
+                    <div class="modal-recommendations">
+                        <h4><i class="fa-solid fa-circle-nodes text-glow"></i> Similar Hotels you might like</h4>
+                        <div class="modal-rec-grid" id="modal-rec-grid">
+                            <!-- Similar hotels load dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Booking Form -->
+                <div class="modal-body-right">
+                    <div class="booking-card">
+                        <h3>Book Your Stay</h3>
+                        <form id="booking-form" onsubmit="handleCreateBooking(event)">
+                            <div class="input-group">
+                                <label for="book-room-type">Select Room Type</label>
+                                <select id="book-room-type" onchange="calculateBookingPrice()">
+                                    <option value="Standard">Standard Room</option>
+                                    <option value="Deluxe">Deluxe Room (+60%)</option>
+                                    <option value="Suite">Grand Executive Suite (+150%)</option>
+                                </select>
+                            </div>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="book-check-in">Check In</label>
+                                    <input type="date" id="book-check-in" required onchange="calculateBookingPrice()">
+                                </div>
+                                <div class="input-group">
+                                    <label for="book-check-out">Check Out</label>
+                                    <input type="date" id="book-check-out" required onchange="calculateBookingPrice()">
+                                </div>
+                            </div>
+                            <div class="booking-pricing" id="booking-pricing-box">
+                                <div class="price-row">
+                                    <span>Nights:</span>
+                                    <span id="price-nights">0</span>
+                                </div>
+                                <div class="price-row total">
+                                    <span>Estimated Total:</span>
+                                    <span id="price-total">$0.00</span>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary book-btn">
+                                Request Booking <i class="fa-solid fa-calendar-check"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ADD / EDIT LISTING MODAL ================= -->
+    <div id="modal-add-hotel" class="modal-overlay hidden" onclick="closeModalOnOverlay(event, 'modal-add-hotel')">
+        <div class="modal-card modal-medium">
+            <button class="modal-close" onclick="closeModal('modal-add-hotel')"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="modal-title" id="listing-modal-title">Add New Hotel Listing</h2>
+            
+            <form id="admin-hotel-form" onsubmit="handleSaveHotel(event)">
+                <input type="hidden" id="edit-hotel-id">
+                
+                <div class="input-group">
+                    <label for="hotel-name">Hotel Name</label>
+                    <input type="text" id="hotel-name" placeholder="Grand Palace Resort" required>
+                </div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="hotel-city">City</label>
+                        <input type="text" id="hotel-city" placeholder="New Delhi" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="hotel-locality">Locality</label>
+                        <input type="text" id="hotel-locality" placeholder="Connaught Place">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="hotel-address">Full Address</label>
+                    <input type="text" id="hotel-address" placeholder="12 Gandhi Rd, Connaught Place, New Delhi">
+                </div>
+
+                <div class="input-group">
+                    <label for="hotel-cuisines">Amenities & Cuisines (Comma separated)</label>
+                    <input type="text" id="hotel-cuisines" placeholder="Wifi, Pool, Spa, Free Breakfast, Italian">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="hotel-cost">Cost for Two</label>
+                        <input type="number" id="hotel-cost" placeholder="1200" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="hotel-rooms">Total Rooms Available</label>
+                        <input type="number" id="hotel-rooms" placeholder="5" value="5" required>
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="hotel-lat">Latitude</label>
+                        <input type="number" step="any" id="hotel-lat" placeholder="28.6139" value="28.6139">
+                    </div>
+                    <div class="input-group">
+                        <label for="hotel-lng">Longitude</label>
+                        <input type="number" step="any" id="hotel-lng" placeholder="77.2090" value="77.2090">
+                    </div>
+                </div>
+
+                <!-- Model Rating Predictor inside listings form -->
+                <div class="prediction-box">
+                    <div class="prediction-header">
+                        <h4><i class="fa-solid fa-wand-magic-sparkles text-glow"></i> AI Rating Predictor Integration</h4>
+                        <button type="button" class="btn-predict" onclick="runAiRatingPrediction()">Predict Initial Rating</button>
+                    </div>
+                    <div class="prediction-fields">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="pred-votes">Votes (Estimated reviews)</label>
+                                <input type="number" id="pred-votes" value="100">
+                            </div>
+                            <div class="input-group">
+                                <label for="pred-price-range">Price Tier (1-4)</label>
+                                <select id="pred-price-range">
+                                    <option value="1">1 (Budget)</option>
+                                    <option value="2" selected>2 (Standard)</option>
+                                    <option value="3">3 (Premium)</option>
+                                    <option value="4">4 (Luxury)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="predicted-rating-output hidden" id="predicted-rating-result">
+                            <span>Predicted Rating:</span> <strong id="pred-rating-value">4.2</strong> 
+                            <span class="pred-text" id="pred-rating-text">(Very Good)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary submit-listing-btn">
+                    Save Listing <i class="fa-solid fa-save"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= NOTIFICATION WIDGET ================= -->
+    <div id="toast" class="toast-container"></div>
+
+    <!-- Script Entry Point -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
